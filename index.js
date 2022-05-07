@@ -27,26 +27,63 @@ const game = {
     x: 3,
     y: 0,
     block: [
-      ['o', 'o', 'o',],
       ['x', 'o', 'o',],
       ['x', 'x', 'x',],
+      ['o', 'o', 'o',],
+    ],
+    rotateIndex: 0,
+    rotation: [
+      [
+        ['x', 'o', 'o',],
+        ['x', 'x', 'x',],
+        ['o', 'o', 'o',],
+      ],
+      [
+        ['o', 'x', 'x',],
+        ['o', 'x', 'o',],
+        ['o', 'x', 'o',],
+      ],
+      [
+        ['o', 'o', 'o',],
+        ['x', 'x', 'x',],
+        ['o', 'o', 'x',],
+      ],
+      [
+        ['o', 'x', 'o',],
+        ['o', 'x', 'o',],
+        ['x', 'x', 'o',],
+      ],
     ]
   },
 
   moveLeft() {
-    this.activeTetromino.x -= 1
+    if (this.checkOutPosition(this.activeTetromino.x - 1, this.activeTetromino.y)) {
+      this.activeTetromino.x -= 1
+    }
   },
 
   moveRight() {
-    this.activeTetromino.x += 1
+    if (this.checkOutPosition(this.activeTetromino.x + 1, this.activeTetromino.y)) {
+      this.activeTetromino.x += 1
+    }
   },
 
   moveDown() {
-    this.activeTetromino.y += 1
+    if (this.checkOutPosition(this.activeTetromino.x, this.activeTetromino.y + 1)) {
+      this.activeTetromino.y += 1
+    } else {
+      this.stopMove()
+    }
   },
 
   rotateTetromino() {
+    this.activeTetromino.rotateIndex = this.activeTetromino.rotateIndex < 3 ? this.activeTetromino.rotateIndex + 1 : 0
+    this.activeTetromino.block = this.activeTetromino.rotation[this.activeTetromino.rotateIndex]
 
+    if (!this.checkOutPosition(this.activeTetromino.x, this.activeTetromino.y)) {
+      this.activeTetromino.rotateIndex = this.activeTetromino.rotateIndex > 0 ? this.activeTetromino.rotateIndex - 1 : 3
+      this.activeTetromino.block = this.activeTetromino.rotation[this.activeTetromino.rotateIndex]
+    }
   },
 
   viewArea() {
@@ -57,12 +94,39 @@ const game = {
       const row = block[i]
 
       for (let j = 0; j < row.length; j++) {
-        if (row[j] === 'x') {
+        if (row[j] !== 'o') {
           area[y + i][x + j] = block[i][j]
         }
       }
     }
     return area
+  },
+
+  checkOutPosition(x, y) {
+    const tetromino = this.activeTetromino.block
+
+    for (let i = 0; i < tetromino.length; i++) {
+      for (let j = 0; j < tetromino[i].length; j++) {
+        if (tetromino[i][j] === 'o') continue
+        if (!this.area[y + i] || !this.area[y + i][x + j] || this.area[y + i][x + j] !== 'o')
+        return false
+      }
+    }
+    return true
+  },
+
+  stopMove() {
+    const {x, y, block} = this.activeTetromino
+
+    for (let i = 0; i < block.length; i++) {
+      const row = block[i]
+
+      for (let j = 0; j < row.length; j++) {
+        if (row[j] !== 'o') {
+          this.area[y + i][x + j] = block[i][j]
+        }
+      }
+    }
   }
 }
 
@@ -83,12 +147,14 @@ container.append(canvas)
 const context = canvas.getContext('2d')
 
 function showArea(area) {
+  context.clearRect(0, 0, canvas.width, canvas.height)
+
   for (let y = 0; y < area.length; y++) {
     const line = area[y]
 
     for (let x = 0; x < line.length; x++) {
       const block = line[x]
-      if (block === 'x') {
+      if (block !== 'o') {
         context.fillStyle = 'blue'
         context.fillRect(x * SIZE_BLOCK, y * SIZE_BLOCK, SIZE_BLOCK, SIZE_BLOCK)
         context.strokeStyle = 'white'
@@ -97,5 +163,28 @@ function showArea(area) {
     }
   }
 }
+
+window.addEventListener('keydown', (e) => {
+  const key = e.code
+
+  switch(key) {
+    case 'ArrowLeft':
+      game.moveLeft();
+      showArea(game.viewArea());
+    break;
+    case 'ArrowRight':
+      game.moveRight();
+      showArea(game.viewArea());
+    break;
+    case 'ArrowDown':
+      game.moveDown();
+      showArea(game.viewArea());
+    break;
+    case 'ArrowUp':
+      game.rotateTetromino();
+      showArea(game.viewArea());
+    break;
+  }
+})
 
 showArea(game.viewArea())
