@@ -6,6 +6,7 @@ export class Controller {
 
 
     this.view.init()
+    this.view.preview()
   }
 
   init(codeKey) {
@@ -20,10 +21,20 @@ export class Controller {
   start() {
     this.view.showArea(this.game.viewArea());
 
-    setInterval(() => {
-      this.game.moveDown();
-      this.view.showArea(this.game.viewArea());
-    }, 1000)
+    this.game.createUpdatePanels(this.view.createBlockScore(), this.view.createBlockNextTetramino())
+
+    const tick = () => {
+      const time = (1100 - 100 * this.game.lvl)
+      if (this.game.gameOver) return
+      setTimeout(() => {
+        this.game.moveDown();
+        this.view.showArea(this.game.viewArea());
+        tick()
+      }, time > 100 ? time : 100)
+    }
+
+    tick()
+
 
     window.addEventListener('keydown', (e) => {
       const key = e.code
@@ -42,7 +53,7 @@ export class Controller {
           this.view.showArea(this.game.viewArea());
         break;
         case 'ArrowUp':
-          this.game.rotateTetromino();
+          this.game.rotateTetramino();
           this.view.showArea(this.game.viewArea());
         break;
       }
